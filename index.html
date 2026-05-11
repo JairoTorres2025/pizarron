@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wolf Carports - Pizarrón</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; min-height: 100vh; }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .header h1 { font-size: 1.3rem; opacity: 0.8; }
+        .caller-name { font-size: 1.8rem; font-weight: bold; color: #ffc107; margin-top: 0.2rem; }
+        .status { display: flex; align-items: center; gap: 0.5rem; color: #aaa; font-size: 0.85rem; }
+        .status .dot {
+            width: 8px; height: 8px; border-radius: 50%; background: #4caf50;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .status.error .dot { background: #f44336; animation: none; }
+        .refresh-btn {
+            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+            color: white; padding: 0.3rem 0.8rem; border-radius: 6px; cursor: pointer;
+            font-size: 0.8rem; margin-left: 0.5rem; transition: background 0.2s;
+        }
+        .refresh-btn:hover { background: rgba(255,255,255,0.25); }
+
+        /* Container */
+        .container { max-width: 1200px; margin: 1.5rem auto; padding: 0 1rem; }
+
+        /* Caller Tabs */
+        .caller-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .caller-tab {
+            padding: 0.5rem 1.2rem; background: white; border: 2px solid #dee2e6;
+            border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s;
+            text-decoration: none; color: #555; font-size: 0.95rem;
+        }
+        .caller-tab.active { background: #1a1a2e; color: #ffc107; border-color: #1a1a2e; }
+        .caller-tab:hover:not(.active) { border-color: #1a1a2e; color: #1a1a2e; }
+
+        /* Stats bar */
+        .stats-bar {
+            display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;
+        }
+        .stat-badge {
+            background: white; padding: 0.5rem 1rem; border-radius: 8px;
+            font-size: 0.9rem; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .stat-badge.urgent { color: #d32f2f; border-left: 3px solid #d32f2f; }
+        .stat-badge.pending { color: #1976d2; border-left: 3px solid #1976d2; }
+        .stat-badge.scheduled { color: #f57c00; border-left: 3px solid #f57c00; }
+
+        /* Card / Table */
+        .card {
+            background: white; border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow: hidden;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th {
+            background: #f8f9fa; padding: 0.9rem 1rem; text-align: left;
+            font-weight: 700; color: #333; border-bottom: 2px solid #dee2e6;
+            font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.03em;
+        }
+        td { padding: 0.75rem 1rem; border-bottom: 1px solid #eee; vertical-align: middle; }
+        tbody tr { transition: all 0.3s ease; }
+        tbody tr:hover { background: #f8f9fa; }
+
+        /* Urgent row */
+        tr.urgent { background: #fff8e1 !important; }
+        tr.urgent td { border-bottom-color: #ffe082; }
+        .urgent-badge {
+            background: #d32f2f; color: white; padding: 0.2rem 0.6rem;
+            border-radius: 4px; font-size: 0.75rem; font-weight: 700;
+            display: inline-block; animation: urgentPulse 1.5s infinite;
+        }
+        @keyframes urgentPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+        /* Phone link */
+        .phone-link {
+            color: #1976d2; text-decoration: none; font-weight: 600;
+            font-size: 1rem; letter-spacing: 0.02em;
+        }
+        .phone-link:hover { text-decoration: underline; color: #0d47a1; }
+
+        /* Contactado button */
+        .btn-contacted {
+            padding: 0.45rem 1.2rem; border: none; border-radius: 6px;
+            cursor: pointer; font-weight: 600; transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+        .btn-si { background: #4caf50; color: white; }
+        .btn-si:hover { background: #388e3c; transform: scale(1.05); }
+        .btn-si:active { transform: scale(0.95); }
+
+        /* Row fade-out animation */
+        tr.fading { opacity: 0; transform: translateX(20px); transition: all 0.4s ease; }
+
+        /* Empty state */
+        .empty-state { text-align: center; padding: 3rem; color: #999; font-size: 1.1rem; }
+
+        /* Instructions */
+        .instructions {
+            background: #e8f5e9; border-radius: 8px; padding: 1rem 1.2rem;
+            margin-top: 1.2rem; font-size: 0.85rem; color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+        .instructions strong { font-size: 0.95rem; }
+        .instructions ul { margin-top: 0.4rem; padding-left: 1.5rem; }
+        .instructions li { margin-bottom: 0.3rem; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header { flex-direction: column; gap: 0.5rem; text-align: center; }
+            .caller-name { font-size: 1.4rem; }
+            td, th { padding: 0.5rem 0.4rem; font-size: 0.8rem; }
+            .phone-link { font-size: 0.85rem; }
+            .btn-contacted { padding: 0.3rem 0.8rem; font-size: 0.75rem; }
+            .container { padding: 0 0.5rem; }
+            .caller-tabs { gap: 0.3rem; }
+            .caller-tab { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <h1>🐺 Wolf Carports</h1>
+        <div class="caller-name" id="caller-title">Pizarrón</div>
+    </div>
+    <div class="status" id="status-bar">
+        <div class="dot"></div>
+        <span id="status-text">Conectando...</span>
+        <button class="refresh-btn" onclick="fetchData()">⟳ Actualizar</button>
+    </div>
+</div>
+
+<div class="container">
+    <div class="caller-tabs" id="caller-tabs"></div>
+    <div class="stats-bar" id="stats-bar"></div>
+
+    <div class="card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Urgente</th>
+                    <th>Teléfono</th>
+                    <th>Nombre</th>
+                    <th>Hora</th>
+                    <th>Notas</th>
+                    <th>Contactado</th>
+                </tr>
+            </thead>
+            <tbody id="data-body">
+                <tr><td colspan="6" class="empty-state">Cargando datos...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="instructions">
+        <strong>Instrucciones para el Wolf Rep:</strong>
+        <ul>
+            <li>Las filas <strong>resaltadas en amarillo</strong> son <strong>URGENTES</strong> — el cliente solicita llamada inmediata.</li>
+            <li>Haga clic en el <strong>número de teléfono</strong> para abrir el marcador JustCall.</li>
+            <li>Si la columna <strong>Hora</strong> tiene un valor, el cliente solicitó llamada a esa hora.</li>
+            <li>Si se conecta con el cliente (conversación bilateral), haga clic en <strong>"Sí ✓"</strong> en Contactado.</li>
+            <li>Si el cliente <strong>no contesta</strong>, no haga nada. Puede ser reasignado a otro Wolf Rep.</li>
+            <li>La asignación aquí <strong>no equivale</strong> a asignación en el CRM. Solo se asigna en CRM al establecer comunicación.</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    // ===================== CONFIGURATION =====================
+    const CONFIG = {
+        // IMPORTANT: Paste your deployed Google Apps Script URL below.
+        // See Code.gs and README.md for deployment instructions.
+        APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwiikC_eAsXMkwhaP6kdfOSVEyWTK0ELgYTNR1tik4xqmGxGYMfmyynTStwbstmeOSH/exec',
+        CALLERS: ['Nick', 'Ignacio', 'Moises', 'Jairo', 'Rudy'],
+        REFRESH_INTERVAL: 5000  // milliseconds (5 seconds)
+    };
+    // =========================================================
+
+    const urlParams = new URLSearchParams(window.location.search);
+    let currentCaller = urlParams.get('caller') || CONFIG.CALLERS[0];
+    const soloMode = urlParams.get('solo') === 'true';
+
+    // --- Render caller tabs ---
+    function renderTabs() {
+        if (soloMode) { document.getElementById('caller-tabs').style.display = 'none'; return; }
+        document.getElementById('caller-tabs').innerHTML = CONFIG.CALLERS.map(name =>
+            `<a href="?caller=${name}" class="caller-tab ${name === currentCaller ? 'active' : ''}">${name}</a>`
+        ).join('');
+    }
+
+    // --- Update header title ---
+    function updateTitle() {
+        document.getElementById('caller-title').textContent = `Pizarrón de ${currentCaller}`;
+        document.title = `Pizarrón - ${currentCaller} | Wolf Carports`;
+    }
+
+    // --- Fetch data via Apps Script proxy ---
+    async function fetchData() {
+        if (!CONFIG.APPS_SCRIPT_URL) {
+            setStatus('error', '⚠️ APPS_SCRIPT_URL no configurada. Ver README.md');
+            return;
+        }
+        const url = `${CONFIG.APPS_SCRIPT_URL}?action=getData&caller=${encodeURIComponent(currentCaller)}`;
+
+        try {
+            const response = await fetch(url, { redirect: 'follow' });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            if (data.status === 'error') throw new Error(data.message);
+            updateTable(data.values || []);
+            setStatus('ok', `Última actualización: ${new Date().toLocaleTimeString('es-MX')}`);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+            setStatus('error', `⚠️ Error: ${error.message}`);
+        }
+    }
+
+    // --- Update status indicator ---
+    function setStatus(type, text) {
+        const bar = document.getElementById('status-bar');
+        const txt = document.getElementById('status-text');
+        bar.className = `status ${type === 'error' ? 'error' : ''}`;
+        txt.textContent = text;
+    }
+
+    // --- Helper: check if value is "yes" / "si" ---
+    function isYes(val) {
+        const v = (val || '').trim().toLowerCase();
+        return v === 'yes' || v === 'si' || v === 'sí';
+    }
+
+    // --- Format phone to international (digits only, starting with 1) ---
+    function formatPhone(raw) {
+        let digits = raw.replace(/\D/g, '');
+        if (digits.length === 10) digits = '1' + digits;
+        return digits;
+    }
+
+    // --- Update the table ---
+    function updateTable(rows) {
+        const tbody = document.getElementById('data-body');
+        if (!rows || rows.length <= 1) {
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No hay clientes asignados en este momento.</td></tr>';
+            updateStats(0, 0, 0);
+            return;
+        }
+
+        let html = '';
+        let count = 0, urgentCount = 0, scheduledCount = 0;
+
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length === 0) continue;
+
+            const urgente  = String(row[0] || '').trim();
+            const telefono = String(row[1] || '').trim();
+            const nombre   = String(row[2] || '').trim();
+            const hora     = String(row[3] || '').trim();
+            const notas    = String(row[4] || '').trim();
+            const contactado = String(row[5] || '').trim();
+
+            // Skip contacted
+            if (isYes(contactado)) continue;
+            // Skip empty rows
+            if (!telefono && !nombre) continue;
+
+            count++;
+            const isUrgent = isYes(urgente);
+            if (isUrgent) urgentCount++;
+            if (hora) scheduledCount++;
+
+            // Phone link
+            const cleanPhone = formatPhone(telefono);
+            const phoneHtml = telefono
+                ? `<a href="https://app.justcall.io/dialer?numbers=%2B${cleanPhone}" target="_blank" class="phone-link">${cleanPhone}</a>`
+                : '—';
+
+            html += `
+                <tr class="${isUrgent ? 'urgent' : ''}" data-row="${i + 1}" id="row-${i + 1}">
+                    <td>${isUrgent ? '<span class="urgent-badge">🔴 URGENTE</span>' : ''}</td>
+                    <td>${phoneHtml}</td>
+                    <td><strong>${nombre || '—'}</strong></td>
+                    <td>${hora || '—'}</td>
+                    <td>${notas || '—'}</td>
+                    <td>
+                        <button class="btn-contacted btn-si" onclick="markContacted(${i + 1}, this)">Sí ✓</button>
+                    </td>
+                </tr>`;
+        }
+
+        if (count === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-state">✅ Todos los clientes han sido contactados. ¡Buen trabajo!</td></tr>';
+        } else {
+            tbody.innerHTML = html;
+        }
+        updateStats(count, urgentCount, scheduledCount);
+    }
+
+    // --- Update stats badges ---
+    function updateStats(total, urgent, scheduled) {
+        const bar = document.getElementById('stats-bar');
+        let badges = `<div class="stat-badge pending">📋 Pendientes: ${total}</div>`;
+        if (urgent > 0) badges += `<div class="stat-badge urgent">🔴 Urgentes: ${urgent}</div>`;
+        if (scheduled > 0) badges += `<div class="stat-badge scheduled">🕐 Con hora: ${scheduled}</div>`;
+        bar.innerHTML = badges;
+    }
+
+    // --- Mark customer as contacted ---
+    async function markContacted(rowIndex, btnElement) {
+        if (!CONFIG.APPS_SCRIPT_URL) {
+            alert('⚠️ La URL del Apps Script no está configurada.\n\nVer el archivo README.md para instrucciones de configuración.');
+            return;
+        }
+
+        // Optimistic UI: fade out the row
+        const row = document.getElementById(`row-${rowIndex}`);
+        if (row) row.classList.add('fading');
+        if (btnElement) { btnElement.disabled = true; btnElement.textContent = '⏳'; }
+
+        try {
+            const url = `${CONFIG.APPS_SCRIPT_URL}?action=markContacted&caller=${encodeURIComponent(currentCaller)}&row=${rowIndex}&value=Yes`;
+            await fetch(url, { redirect: 'follow' });
+            setTimeout(fetchData, 1500);
+        } catch (error) {
+            console.error('Error marking contacted:', error);
+            if (row) row.classList.remove('fading');
+            if (btnElement) { btnElement.disabled = false; btnElement.textContent = 'Sí ✓'; }
+            setTimeout(fetchData, 1500);
+        }
+    }
+
+    // --- Initialize ---
+    renderTabs();
+    updateTitle();
+    fetchData();
+    setInterval(fetchData, CONFIG.REFRESH_INTERVAL);
+</script>
+
+</body>
+</html>
