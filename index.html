@@ -286,7 +286,7 @@
             // Phone link
             const cleanPhone = formatPhone(telefono);
             const phoneHtml = telefono
-                ? `<a href="https://app.justcall.io/dialer?numbers=%2B${cleanPhone}" target="_blank" class="phone-link">${cleanPhone}</a>`
+                ? `<a href="https://app.justcall.io/dialer?numbers=%2B${cleanPhone}" target="_blank" class="phone-link" onclick="notifyJustCallClick('${cleanPhone}')">${cleanPhone}</a>`
                 : '—';
 
             html += `
@@ -340,6 +340,13 @@
             if (row) row.classList.remove('fading');
             if (btnElement) { btnElement.disabled = false; btnElement.textContent = 'Sí ✓'; }
             setTimeout(fetchData, 1500);
+        }
+    }
+
+    // --- Notify parent dashboard of JustCall clicks for reporting ---
+    function notifyJustCallClick(phone) {
+        if (window.parent !== window) {
+            window.parent.postMessage({ type: 'pizarron_justcall_click', phone: phone, caller: currentCaller }, '*');
         }
     }
 
